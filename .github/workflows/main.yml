@@ -31,7 +31,8 @@ jobs:
       - name: Build Docker image
         run: |
           echo "Building Docker image..."
-          docker buildx build --load -t ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:latest .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:latest .
+
 
       # Login to DockerHub
       - name: Login to DockerHub
