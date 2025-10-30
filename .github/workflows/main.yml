@@ -9,27 +9,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Checkout your repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Setup Docker Buildx (ensures build context works properly)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Set up Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
 
+      # Install dependencies (optional sanity check)
       - name: Install dependencies
         run: npm install
 
+      # Build Docker image with correct context and load it for later steps
       - name: Build Docker image
-        run: docker buildx build --load -t ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:latest .
+        run: |
+          echo "Building Docker image..."
+          docker buildx build --load -t ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:latest .
 
-
+      # Login to DockerHub
       - name: Login to DockerHub
         run: echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
 
+      # Push image to DockerHub
       - name: Push image to DockerHub
         run: docker push ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:latest
 
+      # Deploy on EC2 using SSH
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v1.1.0
         with:
@@ -37,6 +49,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
+            echo "Pulling latest image and redeploying..."
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/nodejs-demo-app:latest
             sudo docker stop nodejs-demo-app || true
             sudo docker rm nodejs-demo-app || true
